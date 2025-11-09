@@ -20,6 +20,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   List<String> _words = [];
   List<bool?> _wordCorrectness = [];
   bool _currentWordWrong = false;
+  bool _complete = false;
 
   void _startTimer() {
     if (_isRunning) return;
@@ -34,11 +35,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _stopTimer() {
     _timer?.cancel();
     _isRunning = false;
+    _complete = true;
   }
 
   void _resetTest(String quote) {
     if (quote.isEmpty) return;
-
     _stopTimer();
     _timeElapsed = 0;
     _controller.clear();
@@ -46,6 +47,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _words = quote.split(' ');
     _wordCorrectness = List.filled(_words.length, null);
     _currentWordWrong = false;
+    _complete = false;
     setState(() {});
     ref.read(homeNotifierProvider.notifier).refresh();
   }
@@ -138,41 +140,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                TextField(
-                  controller: _controller,
-                  autofocus: true,
-                  enabled: !isFinished,
-                  style: const TextStyle(color: AppColors.primaryText),
-                  onChanged: (value) {
-                    if (_words.isEmpty || isFinished) return;
+                _complete
+                    ? Center(
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            backgroundColor: AppColors.secondary,
+                            foregroundColor: AppColors.buttonColor,
+                            minimumSize: Size(double.infinity, 50),
+                            textStyle: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          onPressed: () {
+                            _resetTest(quote.quote);
+                          },
+                          child: Text("Try Again"),
+                        ),
+                      )
+                    : TextField(
+                        controller: _controller,
+                        autofocus: true,
+                        enabled: !isFinished,
+                        style: const TextStyle(color: AppColors.primaryText),
+                        onChanged: (value) {
+                          if (_words.isEmpty || isFinished) return;
 
-                    if (!_isRunning) _startTimer();
+                          if (!_isRunning) _startTimer();
 
-                    _currentWordWrong =
-                        currentWord.isNotEmpty &&
-                        !currentWord.startsWith(value.trim());
-                    if (value.endsWith(' ') && !isFinished) {
-                      final typedWord = value.trim();
-                      _wordCorrectness[_currentWordIndex] =
-                          typedWord == currentWord;
+                          _currentWordWrong =
+                              currentWord.isNotEmpty &&
+                              !currentWord.startsWith(value.trim());
+                          if (value.endsWith(' ') && !isFinished) {
+                            final typedWord = value.trim();
+                            _wordCorrectness[_currentWordIndex] =
+                                typedWord == currentWord;
 
-                      _currentWordIndex++;
-                      _controller.clear();
-                      _currentWordWrong = false;
+                            _currentWordIndex++;
+                            _controller.clear();
+                            _currentWordWrong = false;
 
-                      if (_currentWordIndex >= _words.length) {
-                        _stopTimer();
-                      }
-                    }
+                            if (_currentWordIndex >= _words.length) {
+                              _stopTimer();
+                            }
+                          }
 
-                    setState(() {});
-                  },
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: "Type the current word...",
-                    hintStyle: TextStyle(color: AppColors.primarySubText),
-                  ),
-                ),
+                          setState(() {});
+                        },
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          hintText: "Type the current word...",
+                          hintStyle: TextStyle(color: AppColors.primarySubText),
+                        ),
+                      ),
                 const SizedBox(height: 20),
                 Row(
                   children: [
